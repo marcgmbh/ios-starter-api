@@ -1,6 +1,6 @@
 export type Profile = {
   user_id: string;
-  username: string;
+  username?: string;
   pfp_url?: string;
   created_at: string;
   updated_at: string;
@@ -21,3 +21,8 @@ export type Friendship = {
   user2_id: string;
   created_at: string;
 };
+
+export interface ContactMatch {
+  id: string;
+  phoneNumber: string;
+}
