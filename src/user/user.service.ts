@@ -10,6 +10,21 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 export class UserService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  async getProfile(userId: string) {
+    const { data: profile, error } = await this.supabaseService
+      .getClient()
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !profile) {
+      throw new NotFoundException('User not found');
+    }
+
+    return profile;
+  }
+
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
     const { data: existingUser, error: lookupError } =
       await this.supabaseService

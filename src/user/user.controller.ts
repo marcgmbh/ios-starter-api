@@ -1,4 +1,4 @@
-import { Controller, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -7,6 +7,11 @@ import { AuthGuard } from '@nestjs/passport';
 // @UseGuards(AuthGuard('jwt'))
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get(':userId/profile')
+  async getProfile(@Param('userId') userId: string) {
+    return this.userService.getProfile(userId);
+  }
 
   @Patch(':userId/profile')
   async updateProfile(
