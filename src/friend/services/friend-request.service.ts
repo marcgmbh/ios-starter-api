@@ -13,21 +13,23 @@ export class FriendRequestService {
   async getPendingRequests(userId: string): Promise<FriendRequest[]> {
     const supabase = this.supabaseService.getClient();
 
-    // First get the friend requests
+    // Get both sent and received requests
     const { data: requests, error: requestError } = await supabase
       .from('friend_requests')
       .select('*')
-      .eq('to_user_id', userId)
+      .or(`to_user_id.eq.${userId},from_user_id.eq.${userId}`)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
     if (requestError) throw requestError;
     if (!requests) return [];
 
-    // Get all unique user IDs from the requests
-    const userIds = [...new Set(requests.map((r) => r.from_user_id))];
+    // Get all unique user IDs from both senders and receivers
+    const userIds = [
+      ...new Set(requests.flatMap((r) => [r.from_user_id, r.to_user_id])),
+    ].filter((id) => id !== userId);
 
-    // Then get the profiles for these users
+    // Get profiles for all users involved
     const { data: profiles, error: profileError } = await supabase
       .from('profiles')
       .select('user_id, username')
@@ -39,11 +41,19 @@ export class FriendRequestService {
     // Map profiles to requests
     const profileMap = new Map(profiles.map((p) => [p.user_id, p]));
 
-    return requests.map((request) => ({
-      ...request,
-      from_user: profileMap.get(request.from_user_id) || null,
-      to_user: { user_id: userId }, // Current user is always the receiver
-    }));
+    return requests.map((request) => {
+      const isSender = request.from_user_id === userId;
+      return {
+        ...request,
+        from_user: profileMap.get(request.from_user_id) || {
+          user_id: request.from_user_id,
+        },
+        to_user: profileMap.get(request.to_user_id) || {
+          user_id: request.to_user_id,
+        },
+        direction: isSender ? 'sent' : 'received',
+      };
+    });
   }
 
   async sendFriendRequest(
