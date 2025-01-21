@@ -32,6 +32,11 @@ export class FriendRequestService {
     fromUserId: string,
     toUserId: string,
   ): Promise<FriendRequest> {
+    // Prevent self-friend requests
+    if (fromUserId === toUserId) {
+      throw new ConflictException('Cannot send friend request to yourself');
+    }
+
     // Check if request already exists
     const { data: existingRequest } = await this.supabaseService
       .getClient()
@@ -92,6 +97,20 @@ export class FriendRequestService {
     if (updateError) throw updateError;
 
     if (accept) {
+      // Check if friendship already exists
+      const { data: existingFriendship } = await this.supabaseService
+        .getClient()
+        .from('friendships')
+        .select('*')
+        .or(
+          `and(user1_id.eq.${request.from_user_id},user2_id.eq.${request.to_user_id}),and(user1_id.eq.${request.to_user_id},user2_id.eq.${request.from_user_id})`,
+        )
+        .single();
+
+      if (existingFriendship) {
+        throw new ConflictException('Friendship already exists');
+      }
+
       const { error: friendshipError } = await this.supabaseService
         .getClient()
         .from('friendships')

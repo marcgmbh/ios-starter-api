@@ -8,35 +8,47 @@ export class ContactMatchingService {
 
   async findUsersByPhoneNumbers(
     phoneNumbers: string[],
+    currentUserId: string,
   ): Promise<ContactMatch[]> {
-    // Get users with matching phone numbers from profiles
     const { data: matches, error } = await this.supabaseService
       .getClient()
       .from('profiles')
       .select('user_id, username')
-      .in('phone_number', phoneNumbers);
+      .in('phone_number', phoneNumbers)
+      .neq('user_id', currentUserId)
+      .not('user_id', 'in', (qb) =>
+        qb
+          .from('friendships')
+          .select('user2_id')
+          .eq('user1_id', currentUserId)
+          .union((qb) =>
+            qb
+              .from('friendships')
+              .select('user1_id')
+              .eq('user2_id', currentUserId),
+          ),
+      )
+      .not('user_id', 'in', (qb) =>
+        qb
+          .from('friend_requests')
+          .select('to_user_id')
+          .eq('from_user_id', currentUserId)
+          .eq('status', 'pending')
+          .union((qb) =>
+            qb
+              .from('friend_requests')
+              .select('from_user_id')
+              .eq('to_user_id', currentUserId)
+              .eq('status', 'pending'),
+          ),
+      );
 
     if (error) throw error;
-    if (!matches?.length) return [];
-
-    // Get existing friendships
-    const { data: friendships } = await this.supabaseService
-      .getClient()
-      .from('friendships')
-      .select('user1_id, user2_id');
-
-    // Create a set of friend IDs
-    const friendIds = new Set(
-      (friendships || []).flatMap((friendship) => [
-        friendship.user1_id,
-        friendship.user2_id,
-      ]),
+    return (
+      matches?.map((user) => ({
+        id: user.user_id,
+        username: user.username,
+      })) ?? []
     );
-
-    // Filter out users who are already friends
-    return matches.map((user) => ({
-      id: user.user_id,
-      username: user.username,
-    }));
   }
 }
