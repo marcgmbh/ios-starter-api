@@ -8,11 +8,31 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FriendService } from './friend.service';
-import { FriendRequest, Friendship, ContactMatch } from '../types/database.types';
+import {
+  FriendRequest,
+  Friendship,
+  ContactMatch,
+} from '../types/database.types';
 
 @Controller('friends')
 export class FriendController {
   constructor(private readonly friendService: FriendService) {}
+
+  @Get()
+  async getFriends(
+    // TODO: Get userId from authenticated user
+    @Body('userId') userId: string,
+  ): Promise<Friendship[]> {
+    return this.friendService.getFriends(userId);
+  }
+
+  @Get('requests/pending')
+  async getPendingRequests(
+    // TODO: Get userId from authenticated user
+    @Body('userId') userId: string,
+  ): Promise<FriendRequest[]> {
+    return this.friendService.getPendingRequests(userId);
+  }
 
   @Post('request/:toUserId')
   async sendFriendRequest(
@@ -33,36 +53,20 @@ export class FriendController {
     return this.friendService.respondToFriendRequest(requestId, userId, accept);
   }
 
-  @Get('requests')
-  async getFriendRequests(
-    // TODO: Get userId from authenticated user
-    @Body('userId') userId: string,
-  ): Promise<FriendRequest[]> {
-    return this.friendService.getFriendRequests(userId);
-  }
-
-  @Get()
-  async getFriends(
-    // TODO: Get userId from authenticated user
-    @Body('userId') userId: string,
-  ): Promise<Friendship[]> {
-    return this.friendService.getFriends(userId);
-  }
-
   @Delete(':friendId')
-  async removeFriend(
+  async deleteFriend(
     @Param('friendId') friendId: string,
     // TODO: Get userId from authenticated user
     @Body('userId') userId: string,
   ): Promise<void> {
-    return this.friendService.removeFriend(userId, friendId);
+    return this.friendService.deleteFriendship(userId, friendId);
   }
 
   @Post('contacts/match')
-  async matchContactsToUsers(
+  async matchContacts(
     @Body('userId') userId: string,
     @Body('phoneNumbers') phoneNumbers: string[],
   ): Promise<ContactMatch[]> {
-    return this.friendService.matchContactsToUsers(userId, phoneNumbers);
+    return this.friendService.findUsersByPhoneNumbers(userId, phoneNumbers);
   }
 }
