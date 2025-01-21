@@ -7,7 +7,6 @@ export class ContactMatchingService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async findUsersByPhoneNumbers(
-    userId: string,
     phoneNumbers: string[],
   ): Promise<ContactMatch[]> {
     // Get users with matching phone numbers from profiles
@@ -15,8 +14,7 @@ export class ContactMatchingService {
       .getClient()
       .from('profiles')
       .select('user_id, username')
-      .in('phone_number', phoneNumbers)
-      .neq('user_id', userId); // Exclude current user
+      .in('phone_number', phoneNumbers);
 
     if (error) throw error;
     if (!matches?.length) return [];
@@ -25,8 +23,7 @@ export class ContactMatchingService {
     const { data: friendships } = await this.supabaseService
       .getClient()
       .from('friendships')
-      .select('user1_id, user2_id')
-      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+      .select('user1_id, user2_id');
 
     // Create a set of friend IDs
     const friendIds = new Set(
@@ -37,11 +34,9 @@ export class ContactMatchingService {
     );
 
     // Filter out users who are already friends
-    return matches
-      .filter((user) => !friendIds.has(user.user_id))
-      .map((user) => ({
-        id: user.user_id,
-        username: user.username,
-      }));
+    return matches.map((user) => ({
+      id: user.user_id,
+      username: user.username,
+    }));
   }
 }

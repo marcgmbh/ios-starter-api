@@ -1,8 +1,10 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { SupabaseService } from './supabase.service';
+import supabaseConfig from './supabase.config';
 
-@Global()
 @Module({
+  imports: [ConfigModule.forFeature(supabaseConfig)],
   providers: [SupabaseService],
   exports: [SupabaseService],
 })
