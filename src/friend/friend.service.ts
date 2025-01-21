@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { FriendRequest, Friendship, ContactMatch } from './types/friend.types';
+import {
+  FriendRequest,
+  Friendship,
+  ContactMatch,
+} from '../types/database.types';
 import { FriendRequestService } from './services/friend-request.service';
 import { FriendshipService } from './services/friendship.service';
 import { ContactMatchingService } from './services/contact-matching.service';
@@ -11,6 +15,14 @@ export class FriendService {
     private readonly friendshipService: FriendshipService,
     private readonly contactMatchingService: ContactMatchingService,
   ) {}
+
+  getFriends(userId: string): Promise<Friendship[]> {
+    return this.friendshipService.getFriends(userId);
+  }
+
+  getPendingRequests(userId: string): Promise<FriendRequest[]> {
+    return this.friendRequestService.getPendingRequests(userId);
+  }
 
   sendFriendRequest(
     fromUserId: string,
@@ -31,23 +43,15 @@ export class FriendService {
     );
   }
 
-  getFriendRequests(userId: string): Promise<FriendRequest[]> {
-    return this.friendRequestService.getFriendRequests(userId);
+  deleteFriendship(userId: string, friendId: string): Promise<void> {
+    return this.friendshipService.deleteFriendship(userId, friendId);
   }
 
-  getFriends(userId: string): Promise<Friendship[]> {
-    return this.friendshipService.getFriends(userId);
-  }
-
-  removeFriend(userId: string, friendId: string): Promise<void> {
-    return this.friendshipService.removeFriend(userId, friendId);
-  }
-
-  matchContactsToUsers(
+  findUsersByPhoneNumbers(
     userId: string,
     phoneNumbers: string[],
   ): Promise<ContactMatch[]> {
-    return this.contactMatchingService.matchContactsToUsers(
+    return this.contactMatchingService.findUsersByPhoneNumbers(
       userId,
       phoneNumbers,
     );

@@ -1,49 +1,47 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
-import { ContactMatch } from '../types/friend.types';
+import { ContactMatch } from '../../types/database.types';
 
 @Injectable()
 export class ContactMatchingService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  async matchContactsToUsers(
+  async findUsersByPhoneNumbers(
     userId: string,
     phoneNumbers: string[],
   ): Promise<ContactMatch[]> {
-    if (!phoneNumbers.length) {
-      throw new BadRequestException('Phone numbers array is empty');
-    }
-
+    // Get users with matching phone numbers from profiles
     const { data: matches, error } = await this.supabaseService
       .getClient()
-      .from('users')
-      .select('id, phone_number')
+      .from('profiles')
+      .select('user_id, username')
       .in('phone_number', phoneNumbers)
-      .not('id', 'eq', userId);
+      .neq('user_id', userId); // Exclude current user
 
     if (error) throw error;
+    if (!matches?.length) return [];
 
-    // Exclude users who are already friends or have pending friend requests
-    const { data: existingConnections } = await this.supabaseService
+    // Get existing friendships
+    const { data: friendships } = await this.supabaseService
       .getClient()
       .from('friendships')
-      .select('*')
+      .select('user1_id, user2_id')
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
 
-    if (!matches) return [];
-
-    const existingFriendIds = new Set(
-      (existingConnections || []).flatMap((friendship) => [
+    // Create a set of friend IDs
+    const friendIds = new Set(
+      (friendships || []).flatMap((friendship) => [
         friendship.user1_id,
         friendship.user2_id,
       ]),
     );
 
+    // Filter out users who are already friends
     return matches
-      .filter((match) => !existingFriendIds.has(match.id))
-      .map((match) => ({
-        id: match.id,
-        phoneNumber: match.phone_number,
+      .filter((user) => !friendIds.has(user.user_id))
+      .map((user) => ({
+        id: user.user_id,
+        username: user.username,
       }));
   }
 }
