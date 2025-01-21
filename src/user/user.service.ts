@@ -66,14 +66,13 @@ export class UserService {
 
       if (updateProfileDto.username) {
         // Check username uniqueness
-        const { data: existingUsername, error: usernameError } =
+        const { data: existingUsernames, error: usernameError } =
           await this.supabaseService
             .getClient()
             .from('profiles')
             .select('user_id')
             .eq('username', updateProfileDto.username)
-            .neq('user_id', userId)
-            .single();
+            .neq('user_id', userId);
 
         if (usernameError) {
           this.logger.error('Database error while checking username', {
@@ -84,7 +83,7 @@ export class UserService {
           throw new InternalServerErrorException('Error checking username');
         }
 
-        if (existingUsername) {
+        if (existingUsernames && existingUsernames.length > 0) {
           throw new ConflictException('Username is already taken');
         }
       }
