@@ -120,10 +120,7 @@ export class FriendController {
     @Body('phoneNumbers') phoneNumbers: string[],
   ): Promise<ContactMatch[]> {
     try {
-      return await this.friendService.findUsersByPhoneNumbers(
-        phoneNumbers,
-        user.id,
-      );
+      return await this.friendService.findUsersByPhoneNumbers(phoneNumbers);
     } catch (error) {
       this.logger.error('Error matching contacts', {
         userId: user.id,

@@ -47,13 +47,7 @@ export class FriendService {
     return this.friendshipService.deleteFriendship(userId, friendId);
   }
 
-  findUsersByPhoneNumbers(
-    phoneNumbers: string[],
-    userId: string,
-  ): Promise<ContactMatch[]> {
-    return this.contactMatchingService.findUsersByPhoneNumbers(
-      phoneNumbers,
-      userId,
-    );
+  findUsersByPhoneNumbers(phoneNumbers: string[]): Promise<ContactMatch[]> {
+    return this.contactMatchingService.findUsersByPhoneNumbers(phoneNumbers);
   }
 }

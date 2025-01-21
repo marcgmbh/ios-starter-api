@@ -17,8 +17,8 @@ export class FriendRequestService {
       .select(
         `
         *,
-        from_user:profiles!inner(user_id, username),
-        to_user:profiles!inner(user_id, username)
+        from_user:users!friend_requests_from_user_id_fkey (id, username),
+        to_user:users!friend_requests_to_user_id_fkey (id, username)
       `,
       )
       .eq('to_user_id', userId)
