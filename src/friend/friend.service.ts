@@ -49,11 +49,11 @@ export class FriendService {
 
   findUsersByPhoneNumbers(
     phoneNumbers: string[],
-    currentUserId: string,
+    userId: string,
   ): Promise<ContactMatch[]> {
     return this.contactMatchingService.findUsersByPhoneNumbers(
       phoneNumbers,
-      currentUserId,
+      userId,
     );
   }
 }

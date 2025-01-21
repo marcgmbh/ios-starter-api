@@ -10,48 +10,60 @@ export class ContactMatchingService {
     phoneNumbers: string[],
     currentUserId: string,
   ): Promise<ContactMatch[]> {
-    // First get all friend IDs
-    const { data: friendIds } = await this.supabaseService
+    // Get users with matching phone numbers from profiles
+    const { data: matches, error } = await this.supabaseService
+      .getClient()
+      .from('profiles')
+      .select('user_id, username')
+      .in('phone_number', phoneNumbers);
+
+    if (error) throw error;
+    if (!matches?.length) return [];
+
+    // Get existing friendships for current user
+    const { data: friendships } = await this.supabaseService
       .getClient()
       .from('friendships')
       .select('user1_id, user2_id')
       .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`);
 
-    // Get all pending request user IDs
-    const { data: pendingRequestIds } = await this.supabaseService
+    // Get pending friend requests (both sent and received)
+    const { data: pendingRequests } = await this.supabaseService
       .getClient()
       .from('friend_requests')
       .select('from_user_id, to_user_id')
       .eq('status', 'pending')
       .or(`from_user_id.eq.${currentUserId},to_user_id.eq.${currentUserId}`);
 
-    // Create sets of IDs to exclude
-    const excludeIds = new Set<string>([currentUserId]);
+    // Create sets for quick lookup
+    const friendIds = new Set(
+      (friendships || []).flatMap((friendship) => [
+        friendship.user1_id,
+        friendship.user2_id,
+      ]),
+    );
 
-    friendIds?.forEach((f) => {
-      excludeIds.add(f.user1_id);
-      excludeIds.add(f.user2_id);
-    });
+    const pendingRequestIds = new Set(
+      (pendingRequests || []).flatMap((request) => [
+        request.from_user_id,
+        request.to_user_id,
+      ]),
+    );
 
-    pendingRequestIds?.forEach((r) => {
-      excludeIds.add(r.from_user_id);
-      excludeIds.add(r.to_user_id);
-    });
-
-    // Get matching users excluding friends and pending requests
-    const { data: matches, error } = await this.supabaseService
-      .getClient()
-      .from('profiles')
-      .select('user_id, username')
-      .in('phone_number', phoneNumbers)
-      .not('user_id', 'in', Array.from(excludeIds));
-
-    if (error) throw error;
-    return (
-      matches?.map((user) => ({
+    // Filter out users who are:
+    // 1. The current user
+    // 2. Already friends
+    // 3. Have pending requests
+    return matches
+      .filter(
+        (user) =>
+          user.user_id !== currentUserId &&
+          !friendIds.has(user.user_id) &&
+          !pendingRequestIds.has(user.user_id),
+      )
+      .map((user) => ({
         id: user.user_id,
         username: user.username,
-      })) ?? []
-    );
+      }));
   }
 }
