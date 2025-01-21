@@ -14,6 +14,9 @@ export type FriendRequest = {
   status: 'pending' | 'accepted' | 'rejected' | 'canceled';
   created_at: string;
   updated_at: string;
+  from_user?: { user_id: string; username?: string } | null;
+  to_user?: { user_id: string; username?: string } | null;
+  direction?: 'sent' | 'received';
 };
 
 export type Friendship = {
