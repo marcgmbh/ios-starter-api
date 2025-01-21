@@ -11,26 +11,39 @@ export class FriendRequestService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getPendingRequests(userId: string): Promise<FriendRequest[]> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('friend_requests')
-      .select(
-        `
-        id,
-        from_user_id,
-        to_user_id,
-        status,
-        created_at,
-        updated_at,
-        from_user:profiles(username),
-        to_user:profiles(username)
-      `,
-      )
-      .eq('to_user_id', userId)
-      .eq('status', 'pending');
+    const supabase = this.supabaseService.getClient();
 
-    if (error) throw error;
-    return data;
+    // First get the friend requests
+    const { data: requests, error: requestError } = await supabase
+      .from('friend_requests')
+      .select('*')
+      .eq('to_user_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (requestError) throw requestError;
+    if (!requests) return [];
+
+    // Get all unique user IDs from the requests
+    const userIds = [...new Set(requests.map((r) => r.from_user_id))];
+
+    // Then get the profiles for these users
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id, username')
+      .in('user_id', userIds);
+
+    if (profileError) throw profileError;
+    if (!profiles) return requests;
+
+    // Map profiles to requests
+    const profileMap = new Map(profiles.map((p) => [p.user_id, p]));
+
+    return requests.map((request) => ({
+      ...request,
+      from_user: profileMap.get(request.from_user_id) || null,
+      to_user: { user_id: userId }, // Current user is always the receiver
+    }));
   }
 
   async sendFriendRequest(
