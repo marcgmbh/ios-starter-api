@@ -26,6 +26,13 @@ export type Friendship = {
   created_at: string;
 };
 
+export type FriendshipWithFriend = Friendship & {
+  friend: {
+    id: string;
+    username?: string;
+  };
+};
+
 export interface ContactMatch {
   id: string;
   username?: string;
