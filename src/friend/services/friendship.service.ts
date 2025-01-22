@@ -13,8 +13,8 @@ export class FriendshipService {
       .select(
         `
         *,
-        user1:users!friendships_user1_id_fkey (id, username),
-        user2:users!friendships_user2_id_fkey (id, username)
+        user1:profiles!friendships_user1_id_fkey (user_id, username),
+        user2:profiles!friendships_user2_id_fkey (user_id, username)
       `,
       )
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
