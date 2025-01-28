@@ -100,3 +100,4 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 # ios-starter-api
 # real-friends-api
 # real-friends-api
+# friend-camera-api
